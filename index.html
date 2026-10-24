@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savings Growth Calculator</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #171d2e;
+    --accent: #5eead4;
+    --accent2: #818cf8;
+    --text: #e8ecf4;
+    --muted: #8b93a7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    background: linear-gradient(160deg, #0b0f1a 0%, #141a2b 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin-bottom: 0.25rem;
+  }
+  .sub {
+    color: var(--muted);
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 1.5rem;
+    border: 1px solid #262e45;
+  }
+  .control {
+    margin-bottom: 1.6rem;
+  }
+  .control label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .control label span.val {
+    color: var(--accent);
+    font-weight: 600;
+    font-family: 'Consolas', monospace;
+  }
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: #2a3450;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(94,234,212,0.15);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #262e45;
+    font-size: 0.92rem;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-row .label { color: var(--muted); }
+  .result-row .num { font-family: 'Consolas', monospace; font-weight: 600; }
+  .big-total {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .big-total .amount {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Consolas', monospace;
+  }
+  .big-total .caption {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+  canvas {
+    width: 100%;
+    height: 180px;
+    display: block;
+    margin-top: 0.5rem;
+  }
+  .contrib { color: var(--accent2); }
+  .growth { color: var(--accent); }
+  .legend {
+    display: flex;
+    gap: 1.2rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Savings Growth Calculator</h1>
+  <div class="sub">Drag any slider: the projection recalculates live, on every pixel of movement.</div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="control">
+        <label>Monthly contribution <span class="val" id="contribVal">$300</span></label>
+        <input type="range" id="contrib" min="0" max="2000" step="10" value="300">
+      </div>
+      <div class="control">
+        <label>Starting balance <span class="val" id="startVal">$1,000</span></label>
+        <input type="range" id="start" min="0" max="50000" step="500" value="1000">
+      </div>
+      <div class="control">
+        <label>Years invested <span class="val" id="yearsVal">15 yrs</span></label>
+        <input type="range" id="years" min="1" max="40" step="1" value="15">
+      </div>
+      <div class="control">
+        <label>Expected annual return <span class="val" id="rateVal">7.0%</span></label>
+        <input type="range" id="rate" min="0" max="15" step="0.1" value="7">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="big-total">
+        <div class="amount" id="totalOut">$0</div>
+        <div class="caption">Projected balance at end of term</div>
+      </div>
+      <div class="result-row"><span class="label">Total contributed</span><span class="num" id="contributedOut">$0</span></div>
+      <div class="result-row"><span class="label">Starting balance</span><span class="num" id="startOut">$0</span></div>
+      <div class="result-row"><span class="label">Investment growth (interest)</span><span class="num" id="growthOut">$0</span></div>
+      <div class="result-row"><span class="label">Total months</span><span class="num" id="monthsOut">0</span></div>
+      <canvas id="chart" width="600" height="180"></canvas>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--accent2)"></span>Contributions</span>
+        <span><span class="dot" style="background:var(--accent)"></span>Balance (with growth)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const contrib = document.getElementById('contrib');
+const start = document.getElementById('start');
+const years = document.getElementById('years');
+const rate = document.getElementById('rate');
+
+const contribVal = document.getElementById('contribVal');
+const startVal = document.getElementById('startVal');
+const yearsVal = document.getElementById('yearsVal');
+const rateVal = document.getElementById('rateVal');
+
+const totalOut = document.getElementById('totalOut');
+const contributedOut = document.getElementById('contributedOut');
+const startOut = document.getElementById('startOut');
+const growthOut = document.getElementById('growthOut');
+const monthsOut = document.getElementById('monthsOut');
+const canvas = document.getElementById('chart');
+const ctx = canvas.getContext('2d');
+
+function fmt(n) {
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+// Compound interest with recurring monthly contribution.
+// FV = P*(1+r)^n + C * (((1+r)^n - 1) / r)
+// where P = starting lump sum, r = monthly rate, n = number of months, C = monthly contribution
+function computeSeries(P, C, annualRatePct, totalYears) {
+  const n = totalYears * 12;
+  const r = (annualRatePct / 100) / 12;
+  const series = []; // {month, balance, contributed}
+  let balance = P;
+  let contributed = P;
+  series.push({ month: 0, balance, contributed });
+  for (let m = 1; m <= n; m++) {
+    balance = balance * (1 + r) + C;
+    contributed += C;
+    series.push({ month: m, balance, contributed });
+  }
+  return series;
+}
+
+function drawChart(series) {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const maxVal = Math.max(...series.map(p => p.balance), 1);
+  const padL = 40, padB = 20, padT = 10, padR = 10;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  // axes
+  ctx.strokeStyle = '#2a3450';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT);
+  ctx.lineTo(padL, h - padB);
+  ctx.lineTo(w - padR, h - padB);
+  ctx.stroke();
+
+  // y labels
+  ctx.fillStyle = '#8b93a7';
+  ctx.font = '10px Consolas, monospace';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const v = maxVal * i / 4;
+    const y = h - padB - (plotH * i / 4);
+    ctx.fillText('$' + Math.round(v / 1000) + 'k', padL - 6, y + 3);
+  }
+
+  function plotLine(getY, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    series.forEach((p, i) => {
+      const x = padL + (plotW * i / (series.length - 1));
+      const y = h - padB - (plotH * getY(p) / maxVal);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  plotLine(p => p.contributed, '#818cf8');
+  plotLine(p => p.balance, '#5eead4');
+}
+
+function update() {
+  const P = parseFloat(start.value);
+  const C = parseFloat(contrib.value);
+  const yrs = parseInt(years.value, 10);
+  const r = parseFloat(rate.value);
+
+  contribVal.textContent = fmt(C);
+  startVal.textContent = fmt(P);
+  yearsVal.textContent = yrs + ' yrs';
+  rateVal.textContent = r.toFixed(1) + '%';
+
+  const series = computeSeries(P, C, r, yrs);
+  const last = series[series.length - 1];
+  const totalContributed = last.contributed;
+  const finalBalance = last.balance;
+  const growth = finalBalance - totalContributed;
+
+  totalOut.textContent = fmt(finalBalance);
+  contributedOut.textContent = fmt(totalContributed - P) + ' (+ ' + fmt(P) + ' start)';
+  startOut.textContent = fmt(P);
+  growthOut.textContent = fmt(growth);
+  monthsOut.textContent = (yrs * 12).toLocaleString('en-US');
+
+  drawChart(series);
+}
+
+[contrib, start, years, rate].forEach(el => {
+  el.addEventListener('input', update);
+});
+
+update();
+</script>
+</body>
+</html>
